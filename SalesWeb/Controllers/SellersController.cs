@@ -6,6 +6,7 @@ using SalesWeb.Services;
 using System.Diagnostics;
 using System;
 using System.Threading.Tasks;
+using SalesWeb.Services.Exceptions;
 
 namespace SalesWeb.Controllers
 {
@@ -39,7 +40,7 @@ namespace SalesWeb.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var departments = await _departmentService.FindAllAsync ();
+                var departments = await _departmentService.FindAllAsync();
                 var viewModel = new SellerFormViewModel { Seller = seller, Departments = departments };
 
                 return View(viewModel);
@@ -66,8 +67,15 @@ namespace SalesWeb.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            await _sellerService.RemoveAsync(id);
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                await _sellerService.RemoveAsync(id);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (IntegrityException error)
+            {
+                return RedirectToAction(nameof(Error), new { message = "Can't delete seller because he/she has sales" });
+            }
         }
 
         public async Task<IActionResult> Details(int? id)
